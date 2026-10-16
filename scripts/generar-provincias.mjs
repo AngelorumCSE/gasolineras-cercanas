@@ -1,7 +1,7 @@
 // Genera lib/provincias.js: el rectángulo (latitud y longitud mínimas y máximas) que
 // ocupan las gasolineras de cada provincia según el listado nacional del Ministerio.
-// La función serverless lo usa para descargar solo las provincias que tocan el radio
-// de búsqueda en lugar del listado completo de España (unos 12 MB).
+// La búsqueda (lib/gasolineras.js) lo usa para descargar solo las provincias que tocan
+// el radio en lugar del listado completo de España (unos 12 MB).
 //
 // Uso:
 //   npm run provincias                               (descarga el listado nacional)

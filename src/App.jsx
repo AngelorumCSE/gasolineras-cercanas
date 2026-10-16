@@ -1,101 +1,70 @@
-import React, { useMemo, useState } from 'react'
-import InputSection, { DEFAULT_FILTERS } from './components/InputSection.jsx'
-import ResultsSection from './components/ResultsSection.jsx'
-import { fetchStations } from './services/fuelApi.js'
-import { normalizeStationList, toNumber } from './utils/normalize.js'
-import { filterAndRankStations, summarizeStations } from './utils/ranking.js'
+// Componente principal: guarda el estado de la página y reparte los datos a los demás.
+//
+//   Busqueda   -> formulario (punto de búsqueda y filtros)
+//   Resultados -> resumen, mapa y lista de gasolineras
+//
+// Flujo: el usuario elige un punto -> buscar() llama a /api/gasolineras -> se guarda la
+// respuesta en «busqueda» -> se ordena según el carburante y el orden elegidos.
 
-const MAX_RADIUS_KM = 50
-const MAX_LIST = 50
+import { useMemo, useState } from 'react'
+import Busqueda, { FILTROS_INICIALES } from './componentes/Busqueda.jsx'
+import Resultados from './componentes/Resultados.jsx'
+import { pedirGasolineras } from './api.js'
+import { ordenarGasolineras, resumir } from './calculos.js'
 
-function clamp(value, min, max, fallback) {
-  const n = toNumber(String(value ?? ''))
-  return n === null ? fallback : Math.min(Math.max(n, min), max)
-}
+const RADIO_MAXIMO_KM = 50
+const TAMANO_LISTA = 20 // gasolineras que se enseñan en la lista y en el mapa
 
-function readCoordinate(value, limit) {
-  const n = toNumber(String(value ?? ''))
-  return n !== null && Math.abs(n) <= limit ? n : null
+// Texto de un campo -> número ("36,72" o "36.72" -> 36.72). Devuelve null si no es válido.
+function leerNumero(texto) {
+  const limpio = String(texto ?? '').trim().replace(',', '.')
+  const n = Number(limpio)
+  return limpio !== '' && Number.isFinite(n) ? n : null
 }
 
 export default function App() {
-  const [coords, setCoords] = useState({ lat: '', lon: '' })
-  const [filters, setFilters] = useState(DEFAULT_FILTERS)
-  // Última búsqueda correcta: punto, radio, marcas y gasolineras devueltas por la API.
-  const [search, setSearch] = useState(null)
-  const [loading, setLoading] = useState(false)
+  const [punto, setPunto] = useState({ lat: '', lon: '' }) // lo escrito en los campos
+  const [filtros, setFiltros] = useState(FILTROS_INICIALES)
+  const [busqueda, setBusqueda] = useState(null) // la última respuesta del servidor
+  const [cargando, setCargando] = useState(false)
   const [error, setError] = useState('')
-  const [selectedId, setSelectedId] = useState(null)
+  const [seleccionada, setSeleccionada] = useState(null) // id de la gasolinera elegida
 
-  async function onSearch(point) {
-    const target = point ?? coords
-    if (point) setCoords(point)
+  // Pide al servidor las gasolineras alrededor de un punto: el de los campos o uno que
+  // llega del botón de ubicación o de una ciudad de ejemplo.
+  async function buscar(nuevoPunto = punto) {
+    setPunto(nuevoPunto)
     setError('')
 
-    const lat = readCoordinate(target.lat, 90)
-    const lon = readCoordinate(target.lon, 180)
-    if (lat === null || lon === null) {
+    const lat = leerNumero(nuevoPunto.lat)
+    const lon = leerNumero(nuevoPunto.lon)
+    if (lat === null || lon === null || Math.abs(lat) > 90 || Math.abs(lon) > 180) {
       setError('Introduce una latitud (entre -90 y 90) y una longitud (entre -180 y 180) válidas.')
       return
     }
+    // El radio se deja entre 1 y 50 km; si el campo tenía otro valor, se corrige
+    const radioKm = Math.min(Math.max(leerNumero(filtros.radioKm) ?? 10, 1), RADIO_MAXIMO_KM)
+    if (String(radioKm) !== String(filtros.radioKm)) setFiltros({ ...filtros, radioKm })
 
-    const radiusKm = clamp(filters.radiusKm, 1, MAX_RADIUS_KM, DEFAULT_FILTERS.radiusKm)
-    if (String(radiusKm) !== String(filters.radiusKm)) setFilters({ ...filters, radiusKm })
-
-    setLoading(true)
+    setCargando(true)
     try {
-      const data = await fetchStations({
-        lat,
-        lon,
-        radiusKm,
-        includeBrands: filters.includeBrands,
-        excludeBrands: filters.excludeBrands
-      })
-      setSearch({
-        origin: { lat, lon },
-        radiusKm,
-        includeBrands: filters.includeBrands,
-        excludeBrands: filters.excludeBrands,
-        stations: normalizeStationList(data.stations),
-        fecha: data.fecha,
-        incompleto: data.incompleto
-      })
-      setSelectedId(null)
+      const datos = await pedirGasolineras({ lat, lon, radioKm, marcas: filtros.marcas, excluir: filtros.excluir })
+      setBusqueda({ ...datos, punto: { lat, lon } })
+      setSeleccionada(null)
     } catch (e) {
-      setError(e?.message || 'Error al obtener los datos de la API.')
+      setError(e.message)
     } finally {
-      setLoading(false)
+      setCargando(false)
     }
   }
 
-  // El carburante, el orden y el número de resultados se aplican sin volver a llamar a la API.
-  const result = useMemo(() => {
-    if (!search) return null
-    const all = filterAndRankStations(search.stations, {
-      origin: search.origin,
-      radiusKm: search.radiusKm,
-      fuelKey: filters.fuelKey,
-      sortBy: filters.sortBy,
-      includeBrands: search.includeBrands,
-      excludeBrands: search.excludeBrands
-    })
-    const summary = summarizeStations(all)
-    const visible = all.slice(0, clamp(filters.maxResults, 1, MAX_LIST, DEFAULT_FILTERS.maxResults))
-    // En el mapa también aparecen la más barata y la más cercana aunque no entren en la lista.
-    const mapStations = summary
-      ? [...new Map([...visible, summary.cheapest, summary.nearest].map((s) => [s.id, s])).values()]
-      : []
-    return { all, visible, summary, mapStations }
-  }, [search, filters.fuelKey, filters.sortBy, filters.maxResults])
-
-  function onSelect(id, { fromMap = false } = {}) {
-    setSelectedId(id)
-    if (fromMap) {
-      requestAnimationFrame(() =>
-        document.getElementById(`estacion-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-      )
-    }
-  }
+  // Cambiar de carburante o de orden no vuelve a llamar al servidor: la respuesta ya trae
+  // todos los precios, así que se recalcula aquí. useMemo solo lo repite si cambia algo de esto.
+  const resultado = useMemo(() => {
+    if (!busqueda) return null
+    const ordenadas = ordenarGasolineras(busqueda.gasolineras, filtros.carburante, filtros.orden)
+    return { resumen: resumir(ordenadas), visibles: ordenadas.slice(0, TAMANO_LISTA), total: ordenadas.length }
+  }, [busqueda, filtros.carburante, filtros.orden])
 
   return (
     <div className="page">
@@ -118,31 +87,30 @@ export default function App() {
       <main className="grid">
         <section className="card" aria-labelledby="titulo-busqueda">
           <h2 id="titulo-busqueda">Búsqueda</h2>
-          <InputSection
-            coords={coords}
-            onCoordsChange={setCoords}
-            filters={filters}
-            onFiltersChange={setFilters}
-            onSearch={onSearch}
-            loading={loading}
+          <Busqueda
+            punto={punto}
+            setPunto={setPunto}
+            filtros={filtros}
+            setFiltros={setFiltros}
+            buscar={buscar}
+            cargando={cargando}
           />
-          {error ? (
+          {error && (
             <div className="alert" role="alert">
               {error}
             </div>
-          ) : null}
+          )}
         </section>
 
-        <section className="card" aria-labelledby="titulo-resultados" aria-busy={loading}>
+        <section className="card" aria-labelledby="titulo-resultados" aria-busy={cargando}>
           <h2 id="titulo-resultados">Resultados</h2>
-          <ResultsSection
-            search={search}
-            result={result}
-            fuelKey={filters.fuelKey}
-            sortBy={filters.sortBy}
-            loading={loading}
-            selectedId={selectedId}
-            onSelect={onSelect}
+          <Resultados
+            busqueda={busqueda}
+            resultado={resultado}
+            filtros={filtros}
+            cargando={cargando}
+            seleccionada={seleccionada}
+            setSeleccionada={setSeleccionada}
           />
         </section>
       </main>
@@ -154,7 +122,7 @@ export default function App() {
             Geoportal Gasolineras
           </a>{' '}
           (Gobierno de España). Mapa: © OpenStreetMap. Código en{' '}
-          <a href="https://github.com/AngelorumCSE" target="_blank" rel="noreferrer">
+          <a href="https://github.com/AngelorumCSE/gasolineras-cercanas" target="_blank" rel="noreferrer">
             GitHub
           </a>
           .

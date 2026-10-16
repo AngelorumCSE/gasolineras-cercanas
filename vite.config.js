@@ -1,18 +1,19 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import handler from './api/EstacionesTerrestres.js'
+import handler from './api/gasolineras.js'
 
-// En local, /api/EstacionesTerrestres se atiende con la misma función que se despliega
-// en Vercel, así que «npm run dev» y la versión publicada se comportan igual.
-function localApi() {
-  // Sin «return»: si el hook devolviera una función, Vite la ejecutaría como hook posterior.
-  const mount = (server) => {
-    server.middlewares.use('/api/EstacionesTerrestres', (req, res) => handler(req, res))
+// En local («npm run dev»), la ruta /api/gasolineras la atiende la misma función que se
+// publica en Vercel: así la web funciona igual en el ordenador que en Internet.
+function apiLocal() {
+  const montar = (server) => {
+    server.middlewares.use('/api/gasolineras', (req, res) => handler(req, res))
   }
-  return { name: 'local-api', configureServer: mount, configurePreviewServer: mount }
+  // Ojo: «montar» no devuelve nada a propósito. Si devolviera una función, Vite la
+  // ejecutaría después como otro paso de configuración.
+  return { name: 'api-local', configureServer: montar, configurePreviewServer: montar }
 }
 
 export default defineConfig({
-  plugins: [react(), localApi()],
+  plugins: [react(), apiLocal()],
   server: { port: 5173 }
 })
