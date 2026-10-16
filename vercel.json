@@ -1,12 +1,7 @@
 {
-  "rewrites": [
-    {
-      "source": "/api/EstacionesTerrestres/:rest*",
-      "destination": "https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres/:rest*"
-    },
-    {
-      "source": "/api/:path*",
-      "destination": "https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/:path*"
-    }
-  ]
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "regions": ["cdg1"],
+  "functions": {
+    "api/EstacionesTerrestres.js": { "maxDuration": 20 }
+  }
 }

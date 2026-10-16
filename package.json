@@ -1,14 +1,18 @@
 {
-  "name": "act3-gasolineras-api",
+  "name": "gasolineras-cercanas",
   "private": true,
-  "version": "1.0.0",
+  "version": "2.0.0",
+  "description": "Buscador de las gasolineras más baratas cercanas con los precios oficiales de carburantes de España (React + Vite + función serverless en Vercel).",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test",
+    "provincias": "node scripts/generar-provincias.mjs"
   },
   "dependencies": {
+    "leaflet": "^1.9.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

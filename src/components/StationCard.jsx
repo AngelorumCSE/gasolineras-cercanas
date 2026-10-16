@@ -1,50 +1,50 @@
 import React from 'react'
+import { directionsUrl, formatDistance, formatPrice } from '../utils/format.js'
 
-function buildMapsLink(lat, lon) {
-  const q = encodeURIComponent(`${lat},${lon}`)
-  return `https://www.google.com/maps?q=${q}`
-}
-
-export default function StationCard({ station }) {
-  const maps = buildMapsLink(station.lat, station.lon)
+export default function StationCard({ station, isCheapest, isNearest, selected, onSelect }) {
+  const place = [station.town, station.province && station.province !== station.town ? station.province : '']
+    .filter(Boolean)
+    .join(', ')
 
   return (
-    <article className={"station " + (station.withinRadius ? '' : 'out')}>
-      <div className="station-top">
-        <div>
-          <div className="station-brand">{station.brand || 'Sin marca'}</div>
-          <div className="station-address">{station.address}</div>
-          <div className="station-meta">
-            {station.town ? `${station.town} (${station.province || '-'})` : null}
-            {station.schedule ? ` - Horario: ${station.schedule}` : ''}
-          </div>
+    <article
+      id={`estacion-${station.id}`}
+      className={'station' + (selected ? ' selected' : '') + (isCheapest ? ' cheapest' : '')}
+      tabIndex={0}
+      aria-label={`${station.brand || 'Sin marca'}, ${formatPrice(station.selectedFuelPrice)}, a ${formatDistance(station.distanceKm)}`}
+      onClick={() => onSelect(station.id)}
+      onKeyDown={(e) => {
+        if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault()
+          onSelect(station.id)
+        }
+      }}
+    >
+      <div className="station-main">
+        <div className="station-tags">
+          {isCheapest ? <span className="tag tag-good">La más barata</span> : null}
+          {isNearest ? <span className="tag">La más cercana</span> : null}
         </div>
-
-        <div className="station-right">
-          <div className="price">
-            {station.selectedFuelPrice != null ? (
-              <>
-                <div className="price-value">{station.selectedFuelPrice.toFixed(3)} EUR/L</div>
-                <div className="muted small">Precio seleccionado</div>
-              </>
-            ) : (
-              <>
-                <div className="price-value muted">-</div>
-                <div className="muted small">Sin precio</div>
-              </>
-            )}
-          </div>
-          <div className="dist">
-            <span className="badge">{station.distanceKm.toFixed(2)} km</span>
-          </div>
+        <div className="station-brand">{station.brand || 'Sin marca'}</div>
+        <div className="station-address">{station.address}</div>
+        <div className="station-meta">
+          {place}
+          {station.schedule ? ` · ${station.schedule}` : ''}
         </div>
       </div>
 
-      <div className="station-actions">
-        <a className="link" href={maps} target="_blank" rel="noreferrer">
-          Ver en Maps
+      <div className="station-side">
+        <div className="price-value">{formatPrice(station.selectedFuelPrice)}</div>
+        <div className="station-distance">{formatDistance(station.distanceKm)}</div>
+        <a
+          className="link"
+          href={directionsUrl(station.lat, station.lon)}
+          target="_blank"
+          rel="noreferrer"
+          onClick={(e) => e.stopPropagation()}
+        >
+          Cómo llegar
         </a>
-        {station.withinRadius ? <span className="ok">Dentro del radio</span> : <span className="muted">Fuera del radio</span>}
       </div>
     </article>
   )

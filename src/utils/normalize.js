@@ -1,50 +1,43 @@
 import { FUEL_OPTIONS } from '../services/fuelApi.js'
 
-function toNumber(value) {
+// La API usa coma decimal en coordenadas y precios ("36,721722", "1,699").
+export function toNumber(value) {
   if (value == null) return null
   if (typeof value === 'number') return Number.isFinite(value) ? value : null
   if (typeof value !== 'string') return null
   const cleaned = value.trim().replace(',', '.')
+  if (!cleaned) return null
   const n = Number(cleaned)
   return Number.isFinite(n) ? n : null
 }
 
-function toCoord(value) {
-  // En esta API a veces vienen con coma decimal.
-  return toNumber(value)
+// "MÁLAGA" -> "Málaga", "BALEARS (ILLES)" -> "Balears (Illes)"
+function titleCase(text) {
+  return text.toLowerCase().replace(/(^|[\s(/-])(\p{L})/gu, (_, sep, letter) => sep + letter.toUpperCase())
 }
 
 export function normalizeStation(raw) {
-  const lat = toCoord(
-    raw.Latitud ||
-    raw.lat ||
-    raw.latitude
-  );
+  const lat = toNumber(raw.Latitud ?? raw.lat ?? raw.latitude)
+  const lon = toNumber(raw['Longitud (WGS84)'] ?? raw.Longitud ?? raw.lon ?? raw.longitude)
 
-  const lon = toCoord(
-    raw["Longitud (WGS84)"] ||
-    raw.Longitud ||
-    raw.lon ||
-    raw.longitude
-  );
-
-  const prices = {};
+  const prices = {}
   for (const opt of FUEL_OPTIONS) {
-    prices[opt.key] = toNumber(raw[opt.key]);
+    prices[opt.key] = toNumber(raw[opt.key])
   }
 
+  const address = raw['Dirección'] ?? raw.Direccion ?? raw.address ?? ''
+
   return {
-    id: String(raw.IDEESS || raw.ID || raw.id || `${lat},${lon},${raw.Direccion || ''}`),
-    brand: (raw["Rótulo"] || raw.Rotulo || raw.Marca || raw.brand || "").toString().trim(),
-    address: (raw.Direccion || raw.address || '').toString().trim(),
-    town: (raw.Municipio || raw.town || '').toString().trim(),
-    province: (raw.Provincia || raw.province || '').toString().trim(),
-    schedule: (raw.Horario || raw.schedule || '').toString().trim(),
+    id: String(raw.IDEESS || raw.ID || raw.id || `${lat},${lon},${address}`),
+    brand: String(raw['Rótulo'] ?? raw.Rotulo ?? raw.Marca ?? raw.brand ?? '').trim(),
+    address: String(address).trim(),
+    town: String(raw.Municipio ?? raw.town ?? '').trim(),
+    province: titleCase(String(raw.Provincia ?? raw.province ?? '').trim()),
+    schedule: String(raw.Horario ?? raw.schedule ?? '').trim(),
     lat,
     lon,
-    prices,
-    raw
-  };
+    prices
+  }
 }
 
 export function normalizeStationList(rawList) {
