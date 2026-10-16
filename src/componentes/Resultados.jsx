@@ -21,6 +21,7 @@ function Cifra({ titulo, valor, nota }) {
   )
 }
 
+// Enseña lo que toque según el estado: cargando, sin búsqueda, sin resultados o los resultados.
 export default function Resultados({ busqueda, resultado, filtros, cargando, seleccionada, setSeleccionada }) {
   // Mientras llega la respuesta
   if (cargando) {

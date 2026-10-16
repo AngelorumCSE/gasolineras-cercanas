@@ -1,3 +1,4 @@
+// Configuración de Vite: el plugin de React y la ruta /api/gasolineras en local.
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import handler from './api/gasolineras.js'

@@ -68,6 +68,7 @@ function Marcador({ gasolinera: g, esLaMasBarata, marcadores, alElegir }) {
   )
 }
 
+// Recibe el punto y el radio de la búsqueda, las gasolineras de la lista, la más barata y la elegida.
 export default function Mapa({ punto, radioKm, gasolineras, idMasBarata, seleccionada, alElegir }) {
   const marcadores = useRef({}) // id de la gasolinera -> su marcador de Leaflet
   const masBarata = gasolineras.find((g) => g.id === idMasBarata)

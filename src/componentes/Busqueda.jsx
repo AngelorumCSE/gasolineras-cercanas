@@ -20,6 +20,7 @@ export const FILTROS_INICIALES = {
   excluir: '' // quitar estas marcas
 }
 
+// Recibe de App el punto, los filtros, las funciones para cambiarlos y buscar().
 export default function Busqueda({ punto, setPunto, filtros, setFiltros, buscar, cargando }) {
   const [avisoUbicacion, setAvisoUbicacion] = useState('')
 

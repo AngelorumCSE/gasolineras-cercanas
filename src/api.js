@@ -3,6 +3,7 @@
 
 const TIEMPO_MAXIMO_MS = 25000
 
+// Devuelve { fecha, radioKm, provincias, incompleto, gasolineras } o lanza un Error.
 export async function pedirGasolineras({ lat, lon, radioKm, marcas, excluir }) {
   const parametros = new URLSearchParams({ lat, lon, radio: radioKm })
   if (marcas.trim()) parametros.set('marcas', marcas.trim())

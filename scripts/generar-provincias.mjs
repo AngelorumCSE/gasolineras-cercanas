@@ -20,11 +20,13 @@ const MARGEN_GRADOS = 0.05
 // longitud intercambiadas, que agrandarían el rectángulo de su provincia.
 const ESPANA = { latMin: 27.4, latMax: 44.0, lonMin: -18.4, lonMax: 4.6 }
 
+// "36,721722" -> 36.721722 (null si no es un número)
 function aNumero(valor) {
   const n = Number(String(valor ?? '').trim().replace(',', '.'))
   return Number.isFinite(n) ? n : null
 }
 
+// Lee el listado de un archivo si se indica uno; si no, lo descarga de la API.
 async function leerListado(ruta) {
   if (ruta) return JSON.parse(await readFile(ruta, 'utf8'))
   const respuesta = await fetch(URL_NACIONAL, { headers: { Accept: 'application/json' } })

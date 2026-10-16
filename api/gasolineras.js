@@ -16,6 +16,7 @@ function responder(res, codigo, cuerpo, cache = 'no-store') {
   res.end(JSON.stringify(cuerpo))
 }
 
+// Atiende cada petición: lee lat, lon, radio, marcas y excluir, busca las gasolineras y responde en JSON.
 export default async function handler(req, res) {
   // Parámetros de la URL. Vercel los da ya leídos en req.query; en local (vite.config.js)
   // se sacan de la propia URL.

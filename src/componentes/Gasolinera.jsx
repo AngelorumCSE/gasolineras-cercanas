@@ -2,6 +2,7 @@
 
 import { enlaceRuta, formatearDistancia, formatearPrecio } from '../formato.js'
 
+// g es la gasolinera; las demás props dicen si es la más barata, la más cercana o la elegida.
 export default function Gasolinera({ gasolinera: g, esLaMasBarata, esLaMasCercana, seleccionada, alVerEnElMapa }) {
   // "Málaga" o "Marbella, Málaga" (sin repetir si municipio y provincia coinciden)
   const lugar = g.provincia && g.provincia !== g.municipio ? `${g.municipio}, ${g.provincia}` : g.municipio

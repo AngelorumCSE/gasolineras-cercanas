@@ -34,10 +34,11 @@ const LISTADO_MALAGA = [
   gasolineraDeLaApi('3', 'PLENOIL', 36.8213, -4.4214, '1,499') // a unos 11 km
 ]
 
-// Sustituye fetch por una función que responde según el id de provincia de la URL
+// URLs que ha recibido la API simulada y el fetch de verdad, para restaurarlo al acabar
 let llamadas = []
 const fetchOriginal = globalThis.fetch
 
+// Sustituye fetch por una función que responde según el id de provincia de la URL
 function simularApi(respuestas) {
   globalThis.fetch = async (url) => {
     llamadas.push(url)

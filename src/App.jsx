@@ -22,6 +22,7 @@ function leerNumero(texto) {
   return limpio !== '' && Number.isFinite(n) ? n : null
 }
 
+// La página completa. Los datos se guardan aquí y bajan a Busqueda y Resultados como props.
 export default function App() {
   const [punto, setPunto] = useState({ lat: '', lon: '' }) // lo escrito en los campos
   const [filtros, setFiltros] = useState(FILTROS_INICIALES)
